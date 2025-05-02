@@ -10,9 +10,11 @@ Vagrant.configure("2") do |config|
       ip = "192.168.56.10#{i}"
       sftp.vm.network "private_network", ip: ip
 
-      sftp.vm.synced_folder "./shared", "/home/vagrant/shared", create: true
+      sftp.vm.synced_folder "D:/devops_internship/vagrant-keys", "/home/vagrant/shared", create: true
 
       sftp.vm.provision "shell", path: "provision.sh", args: "#{i}"
+
+      sftp.vm.provision "shell", path: "systemd.sh", args: "#{i}"
     end
   end
 end
