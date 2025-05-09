@@ -1,0 +1,30 @@
+version: '3'
+
+services:
+  app:
+    build: .
+    ports:
+      - "5000:5000"
+    volumes:
+      - ./:/app
+      - /home/sftpuser/logs:/app/logs  # Mount external logs directory
+    depends_on:
+      - mongodb
+    networks:
+      - ssh-log-network
+
+  mongodb:
+    image: mongo:4.4
+    ports:
+      - "27017:27017"
+    volumes:
+      - mongodb_data:/data/db
+    networks:
+      - ssh-log-network
+
+networks:
+  ssh-log-network:
+    driver: bridge
+
+volumes:
+  mongodb_data:
