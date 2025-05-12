@@ -27,7 +27,7 @@ vagrant up alpine
 ``` bash
 vagrant ssh alpine
 ```
-- change user to sftpuser
+- change user to appuser (default password: 123)
 - start script `/home/sftpuser/scripts/alpine_ssh.sh` to add other machines to known_hosts
 - start script `/home/sftpuser/scripts/get_logs.sh` to manually read logs
 - go to directory `/home/sftpuser/app/` and start the application by next command:
