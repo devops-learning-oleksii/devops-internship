@@ -46,11 +46,14 @@ for i in 1 2 3; do
   fi
 done
 
+cat "$SHARED_DIR/ed25519.pub" >> /home/vagrant/.ssh/authorized_keys
 
 sudo mv /tmp/auth_keys "$USER_HOME/.ssh/authorized_keys"
 sudo chown $USERNAME:$USERNAME "$USER_HOME/.ssh/authorized_keys"
 sudo chmod 600 "$USER_HOME/.ssh/authorized_keys"
 sudo chmod 700 "$USER_HOME/.ssh"
+sudo chmod 600 /home/vagrant/.ssh/authorized_keys
+sudo chmod 700 /home/vagrant/.ssh
 
 if [ "$VM_ID" != "1" ]; then
   sudo -u $USERNAME ssh-keyscan -H 192.168.56.101 >> /home/$USERNAME/.ssh/known_hosts

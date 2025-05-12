@@ -7,7 +7,7 @@ services:
       - "5000:5000"
     volumes:
       - ./:/app
-      - /home/sftpuser/logs:/app/logs  # Mount external logs directory
+      - /home/appuser/logs:/app/logs  # Mount external logs directory
     depends_on:
       - mongodb
     networks:
