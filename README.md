@@ -28,12 +28,12 @@ vagrant up alpine
 vagrant ssh alpine
 ```
 - change user to appuser (default password: 123)
-- start script `/home/sftpuser/scripts/alpine_ssh.sh` to add other machines to known_hosts
-- start script `/home/sftpuser/scripts/get_logs.sh` to manually read logs
-- go to directory `/home/sftpuser/app/` and start the application by next command:
+- start script `/home/appuser/scripts/alpine_ssh.sh` to add other machines to known_hosts
+- start script `/home/appuser/scripts/get_logs.sh` to manually read logs
+- go to directory `/home/appuser/app/` and start the application by next command:
 ```bash
 docker-compose up --build -d
 ```
 - all is done just check http://localhost:5000/
 ### Additional
-- you can change password for sftpuser inside share folder just change file `password`, default password = 123
+- you can change password for sftpuser and appuser inside share folder just change file `password`, default password = 123
