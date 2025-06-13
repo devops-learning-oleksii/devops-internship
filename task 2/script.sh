@@ -9,7 +9,8 @@ curl "$LOG_URL" -H "Cookie: $cookie " -H "User-Agent: Mozilla/5.0 (X11; Linux x8
 check_password_strength() {
   local password="$1"
   if [[ ${#password} -ge 12 ]] &&
-     echo "$password" | grep -q '[A-Za-z]' &&
+     echo "$password" | grep -q '[A-Z]' &&
+     echo "$password" | grep -q '[a-z]' &&
      echo "$password" | grep -q '[0-9]' &&
      echo "$password" | grep -q '[[:punct:]]'; then
     echo "strong"
