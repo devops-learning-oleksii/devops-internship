@@ -1,0 +1,7 @@
+/build
+/.gradle
+/gradle
+/.idea
+/backup
+/src/test/resources/hibernatetest.properties
+/schedule_logs
