@@ -1,0 +1,43 @@
+pipeline {
+    agent { label 'local-user' }
+    parameters {
+        booleanParam(name: 'AUTO_RUN_CD', defaultValue: false)
+    }
+    stages {
+        stage('Manual approve') {
+            when {
+                expression { !params.AUTO_RUN_CD }
+            }
+            steps {
+                timeout(time: 5, unit: "MINUTES") {
+                    input message: 'Do you want to approve the deployment?', ok: 'Yes'
+                }
+            }
+        }
+        stage('Frontend CD') {
+            environment {
+                SECRET_NAME = credentials('aws-secret-name')             
+                aws_account_id = credentials('AWS_ACCOUNT_ID')
+                AWS_REGION = 'us-east-1'
+                ECR_REPO_FRONTEND = 'frontend-docker'
+                ecr_image_tag = 'latest'
+            }
+            steps {
+                withCredentials([
+                    string(credentialsId: 'AWS_ACCESS_KEY_ID', variable: 'AWS_ACCESS_KEY_ID'),
+                    string(credentialsId: 'AWS_SECRET_ACCESS_KEY', variable: 'AWS_SECRET_ACCESS_KEY')]) {
+                        script {
+                            dir("${env.HOME}/ansible"){
+                                sh '''
+                                    bash -c "                                        
+                                        source .venv/bin/activate
+                                        ansible-playbook -i inventory.ini frontend.yml
+                                    "
+                                '''
+                            }
+                    }
+                }
+            }
+        }
+    }
+}
