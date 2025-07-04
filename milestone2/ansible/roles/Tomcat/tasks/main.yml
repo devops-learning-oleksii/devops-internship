@@ -1,0 +1,17 @@
+---
+- name: Download Tomcat
+  get_url:
+    url: "{{ tomcat_download_url }}"
+    dest: /tmp/tomcat.tar.gz
+    mode: '0644'
+  become: yes
+
+- name: Extract tomcat
+  ansible.builtin.command: tar -xf /tmp/tomcat.tar.gz -C /opt/
+  
+- name: Rename tomcat directory
+  ansible.builtin.command: mv /opt/apache-tomcat-9.0.82 /opt/tomcat
+  
+- name: Clean webapps directory
+  shell: rm -rf {{ tomcat_home }}webapps/*
+  become: yes

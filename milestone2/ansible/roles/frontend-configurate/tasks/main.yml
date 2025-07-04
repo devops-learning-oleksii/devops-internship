@@ -1,0 +1,33 @@
+---
+- name: Delete /usr/share/nginx/html/*
+  file:
+    path: /usr/share/nginx/html/index.html
+    state: absent
+
+- name: unzip build to /usr/share/nginx/html/
+  ansible.builtin.command: unzip -o /home/ubuntu/frontend.zip -d /usr/share/nginx/html/
+
+- name: Read proxy configuration file
+  slurp:
+    src: /home/ubuntu/frontend_config.sh
+  register: frontend_config
+
+- name: Set proxy_public_ip variable
+  set_fact:
+    proxy_public_ip: "{{ frontend_config.content | b64decode | regex_search('proxy_public_ip=([0-9.]+)', '\\1') | first }}"
+
+- name: Replace PROXY_PUBLIC_IP in JS file
+  replace:
+    path: /usr/share/nginx/html/static/js/main.39c9264f.js
+    regexp: 'http://PROXY_PUBLIC_IP'
+    replace: 'https://proxy-test.xyz'
+
+- name: Copy nginx.conf
+  template:
+    src: nginx.conf.j2
+    dest: /etc/nginx/nginx.conf
+
+- name: Reload Nginx service
+  systemd:
+    name: nginx
+    state: reloaded 

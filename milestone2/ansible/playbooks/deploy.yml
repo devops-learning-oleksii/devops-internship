@@ -1,0 +1,55 @@
+---
+- name: update cache
+  hosts: all
+  become: yes
+  roles:
+    - apt-cache
+
+- name: install nginx
+  hosts: proxy:frontend
+  become: yes
+  roles:
+    - nginx
+
+- name: Deploy applications from S3
+  hosts: backend:frontend
+  gather_facts: no  # Matches your current setting
+  roles:
+    - s3_deployment  # Changed from s3_fetcher
+
+- name: Configure Proxy
+  hosts: proxy
+  become: yes
+  vars:
+    data_file: "/home/{{ proxy_user }}/{{ proxy_config_file }}"
+  roles:
+    - role: proxy-configurate
+
+- name: Configure frontend
+  hosts: frontend
+  become: yes
+  roles:
+    - role: frontend-configurate
+
+- name: Restore Database dump
+  hosts: backend
+  roles:
+    - role: dump-restore
+
+- name: install java
+  hosts: backend
+  become: yes
+  roles:
+    - java11
+  
+- name: install Tomcat
+  hosts: backend
+  become: yes
+  roles:
+    - Tomcat
+
+- name: Backend run
+  hosts: backend
+  become: yes
+  roles:
+    - backend-configure

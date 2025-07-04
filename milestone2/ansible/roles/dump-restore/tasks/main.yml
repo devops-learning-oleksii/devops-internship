@@ -1,0 +1,27 @@
+- name: Read proxy configuration file
+  slurp:
+    src: /home/{{ backend_user }}/{{ backend_config_file }}
+  register: backend_config
+
+- name: Set variables
+  set_fact:
+    database_endpoint_raw: "{{ (backend_config.content | b64decode | regex_search('export database_endpoint=([^\\n\\r]+)', '\\1') | first | trim) }}"
+    database_name: "{{ (backend_config.content | b64decode | regex_search('export database_name=([^\\n\\r]+)', '\\1') | first | trim) }}"
+    database_username: "{{ (backend_config.content | b64decode | regex_search('export database_username=([^\\n\\r]+)', '\\1') | first | trim) }}"
+    database_password: "{{ (backend_config.content | b64decode | regex_search('export database_password=([^\\n\\r]+)', '\\1') | first | trim) }}"
+
+- name: Parse database endpoint
+  set_fact:
+    database_host: "{{ database_endpoint_raw.split(':')[0] }}"
+    database_port: "{{ database_endpoint_raw.split(':')[1] | default('5432') }}"
+
+- name: Clean carriage returns from dump file
+  ansible.builtin.shell: |
+    tr -d '\r' < /home/{{ backend_user }}/{{ dump_file }} > /home/{{ backend_user }}/{{ dump_file }}.fixed
+    mv /home/{{ backend_user }}/{{ dump_file }}.fixed /home/{{ backend_user }}/{{ dump_file }}
+
+- name: restore dump
+  ansible.builtin.command: >
+    psql -h {{ database_host }} -p {{ database_port }} -U {{ database_username }} -d {{ database_name }} -f /home/{{ backend_user }}/{{ dump_file }}
+  environment:
+    PGPASSWORD: "{{ database_password }}"

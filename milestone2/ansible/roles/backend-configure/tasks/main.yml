@@ -1,0 +1,48 @@
+---
+- name: Read backend configuration file
+  slurp:
+    src: /home/{{ backend_user }}/{{ backend_config_file }}
+  register: backend_config
+
+- name: Set variables
+  set_fact:
+    database_endpoint_raw: "{{ (backend_config.content | b64decode | regex_search('export database_endpoint=([^\\n\\r]+)', '\\1') | first | trim) }}"
+    database_name: "{{ (backend_config.content | b64decode | regex_search('export database_name=([^\\n\\r]+)', '\\1') | first | trim) }}"
+    database_username: "{{ (backend_config.content | b64decode | regex_search('export database_username=([^\\n\\r]+)', '\\1') | first | trim) }}"
+    database_password: "{{ (backend_config.content | b64decode | regex_search('export database_password=([^\\n\\r]+)', '\\1') | first | trim) }}"
+    redis_endpoint_raw: "{{ (backend_config.content | b64decode | regex_search('export redis_endpoint=([^\\n\\r]+)', '\\1') | first | trim ) }}"
+
+- name: Parse database and redis endpoints
+  set_fact:
+    database_host: "{{ database_endpoint_raw.split(':')[0] }}"
+    database_port: "{{ database_endpoint_raw.split(':')[1] | default('5432') }}"
+    redis_host: "{{ redis_endpoint_raw.split(':')[0] }}"
+    redis_port: "{{ redis_endpoint_raw.split(':')[1] | default('5432') }}"
+
+- name: unzip build
+  ansible.builtin.command: unzip -o /home/{{ backend_user }}/backend.zip -d {{ tomcat_home }}webapps/
+
+- name: Configurate hibernate
+  replace:
+    path: "{{ configs_path }}hibernate.properties"
+    regexp: "{{ item.regexp }}"
+    replace: "{{ item.replace }}"
+  loop:
+    - { regexp: 'DATABASE_ENDPOINT_TOKEN', replace: '{{ database_host }}'}
+    - { regexp: 'DATABASE_NAME_TOKEN', replace: '{{ database_name }}'}
+    - { regexp: 'DATABASE_USERNAME_TOKEN', replace: '{{ database_username }}'}
+    - { regexp: 'DATABASE_USERPASSWORD_TOKEN', replace: '{{ database_password }}'}
+    
+- name: Configurate cache
+  replace:
+    path: "{{ configs_path }}cache.properties"
+    regexp: "REDIS_ENDPOINT_TOKEN"
+    replace: "{{ redis_host }}"
+
+- name: Start tomcat
+  shell: ./catalina.sh start
+  args:
+    chdir: "{{ tomcat_home }}bin"
+  environment:
+    CATALINA_HOME: /opt/tomcat
+  become: yes
