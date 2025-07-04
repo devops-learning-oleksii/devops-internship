@@ -1,0 +1,44 @@
+---
+- name: Fetch secret from AWS Secrets Manager
+  set_fact:
+    secret_obj: "{{ lookup('amazon.aws.aws_secret', secret_name, region=region) | from_json }}"
+
+- name: Set DOMAIN_TOKEN fact
+  set_fact:
+    DOMAIN_TOKEN: "https://{{ secret_obj.domain }}/api"
+
+- name: Get ECR login password
+  command: >
+    aws ecr get-login-password --region {{ region }}
+  register: ecr_login_password
+  changed_when: false
+  no_log: true
+
+- name: Login to Amazon ECR
+  shell: |
+    echo "{{ ecr_login_password.stdout }}" | docker login --username AWS --password-stdin {{ aws_account_id }}.dkr.ecr.{{ region }}.amazonaws.com
+  args:
+    executable: /bin/bash
+
+- name: Pull image from ECR
+  docker_image:
+    name: "{{ docker_image }}"
+    source: pull
+
+- name: Stop docker container by name
+  docker_container:
+    name: schedule-frontend
+    state: stopped
+  become: true
+  ignore_errors: true
+
+- name: Run docker container
+  docker_container:
+    name: schedule-frontend
+    image: "{{ docker_image }}"
+    state: started
+    env:
+      DOMAIN_TOKEN: "{{ DOMAIN_TOKEN }}"
+    published_ports:
+      - "3000:3000"
+    restart_policy: unless-stopped

@@ -1,0 +1,30 @@
+---
+- name: install aws-cli
+  hosts: frontend
+  become: yes
+  gather_facts: no  
+  roles:
+    - aws-cli
+
+- name: install Docker
+  hosts: frontend
+  become: yes
+  gather_facts: no
+  roles:
+    - Docker
+
+- name: run docker image
+  hosts: frontend
+  collections:
+    - amazon.aws
+  become: yes
+  gather_facts: no
+  vars:
+    secret_name: "{{ lookup('env', 'SECRET_NAME') }}"
+    region: "{{ lookup('env', 'AWS_REGION') }}"
+    aws_account_id: "{{ lookup('env', 'aws_account_id') }}"
+    ecr_repo: "{{ lookup('env', 'ECR_REPO_FRONTEND') }}"
+    ecr_image_tag: "{{ lookup('env', 'ecr_image_tag') }}"
+    docker_image: "{{ aws_account_id }}.dkr.ecr.{{ region }}.amazonaws.com/{{ ecr_repo }}:{{ ecr_image_tag }}"
+  roles:
+    - frontend-cd

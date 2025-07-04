@@ -1,0 +1,56 @@
+---
+- name: Install required system packages
+  apt:
+    name:
+      - apt-transport-https
+      - ca-certificates
+      - curl
+      - gnupg
+      - lsb-release
+    state: present
+    update_cache: true
+  become: true
+
+- name: Add Docker GPG key
+  apt_key:
+    url: https://download.docker.com/linux/ubuntu/gpg
+    state: present
+  become: true
+
+- name: Add Docker APT repository
+  apt_repository:
+    repo: "deb [arch=amd64] https://download.docker.com/linux/ubuntu {{ ansible_distribution_release }} stable"
+    state: present
+    filename: docker
+  become: true
+
+- name: Update APT cache after adding Docker repo
+  apt:
+    update_cache: true
+  become: true
+
+- name: Install Docker Engine and Compose plugin
+  apt:
+    name:
+      - docker-ce
+      - docker-ce-cli
+      - containerd.io
+      - docker-compose-plugin
+    state: present
+    update_cache: true
+  become: true
+
+- name: Ensure Docker service is started and enabled
+  service:
+    name: docker
+    state: started
+    enabled: true
+  become: true
+
+- name: Ensure user is added to docker group (optional)
+  user:
+    name: "{{ ansible_user | default('ubuntu') }}"
+    groups: docker
+    append: yes
+  when: ansible_user is defined
+  become: true

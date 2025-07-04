@@ -1,0 +1,36 @@
+version: "3.8"
+
+services:
+  prometheus:
+    image: prom/prometheus:latest
+    container_name: prometheus
+    volumes:
+      - ./prometheus:/etc/prometheus
+      - prometheus_data:/prometheus
+    command:
+      - '--config.file=/etc/prometheus/prometheus.yml'
+    ports:
+      - "9090:9090"
+    restart: unless-stopped
+
+  grafana:
+    user: root
+    image: grafana/grafana:latest
+    container_name: grafana
+    ports:
+      - "3000:3000"
+    volumes:
+      - ./entry.sh:/conf/entry.sh
+      - grafana_data:/var/lib/grafana
+      - ./grafana/provisioning:/etc/grafana/provisioning
+      - ./grafana/dashboards:/var/lib/grafana/dashboards
+    environment:
+      - DISCORD_WEBHOOK_TOKEN
+      - GF_SECURITY_ADMIN_PASSWORD
+      - GF_DASHBOARDS_DEFAULT_HOME_DASHBOARD_PATH=/var/lib/grafana/dashboards/Nodes_Data.json
+    entrypoint: ["/conf/entry.sh"]
+    restart: unless-stopped
+
+volumes:
+  prometheus_data:
+  grafana_data:

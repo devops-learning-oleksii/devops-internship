@@ -1,0 +1,30 @@
+---
+- name: Fetch secret from AWS Secrets Manager
+  set_fact:
+    secret_obj: "{{ lookup('amazon.aws.aws_secret', secret_name, region=region) | from_json }}"
+
+- name: Fetch all RDS instances
+  amazon.aws.rds_instance_info:
+    region: "{{ region }}"
+  register: rds_info
+
+- name: Set DB facts
+  set_fact:
+    db_endpoint: "{{ rds_info.instances[0].endpoint.address }}"
+    db_name: "{{ secret_obj.db_name }}"
+    db_user: "{{ secret_obj.db_username }}"
+    db_password: "{{ secret_obj.db_password }}"
+
+- name: Download dump from S3 bucket
+  amazon.aws.aws_s3:
+    bucket: "{{ s3_bucket }}"
+    object: "{{ s3_object_key }}"
+    dest: "{{ s3_dest_path }}"
+    mode: get
+    region: "{{ region }}"
+
+- name: restore dump
+  ansible.builtin.command: >
+    psql -h {{ db_endpoint }} -p 5432 -U {{ db_user }} -d {{ db_name }} -f {{ s3_dest_path }}
+  environment:
+    PGPASSWORD: "{{ db_password }}"

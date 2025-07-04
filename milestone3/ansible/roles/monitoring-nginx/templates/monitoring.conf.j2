@@ -1,0 +1,25 @@
+server {
+    listen 80;
+    server_name monitoring.proxy-test.xyz;
+
+    return 301 https://$host$request_uri;
+}
+
+server {
+    listen 443 ssl;
+    server_name monitoring.proxy-test.xyz;
+
+    ssl_certificate /etc/ssl/ssl.com.pem;
+    ssl_certificate_key /etc/ssl/ssl.com.key;
+
+    ssl_protocols TLSv1.2 TLSv1.3;
+    ssl_ciphers HIGH:!aNULL:!MD5;
+
+    location / {
+        proxy_pass http://localhost:3000/;
+        proxy_set_header Host $host;
+        proxy_set_header X-Real-IP $remote_addr;
+        proxy_set_header Upgrade $http_upgrade;
+        proxy_set_header Connection "upgrade";
+    }
+}

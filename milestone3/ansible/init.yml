@@ -1,0 +1,57 @@
+---
+- name: configurate proxy
+  hosts: proxy
+  collections:
+    - amazon.aws
+  vars:
+    region: "us-east-1"
+  become: yes
+  gather_facts: no
+  roles:
+    - proxy
+
+- name: restore dump
+  hosts: backend
+  collections:
+    - amazon.aws
+  vars:
+    secret_name: "{{ lookup('env', 'SECRET_NAME') }}"
+    s3_bucket: "{{ lookup('env', 'S3_BUCKET_NAME') }}"
+    region: "us-east-1"
+    s3_object_key: "Dump/database.dump"
+    s3_dest_path: "./database.dump"
+  become: yes
+  gather_facts: no
+  roles:
+    - dump
+
+- name: download Docker
+  hosts: backend, frontend
+  roles:
+    - Docker
+
+- name: download Docker + docker-compose-plugin
+  hosts: monitoring
+  roles:
+    - Docker-compose
+
+- name: setup nodes
+  hosts: backend, frontend, monitoring
+  roles:
+    - node
+
+- name: configurate nginx on monitoring
+  hosts: monitoring
+  roles:
+    - monitoring-nginx
+
+- name: configurate docker on monitoring
+  hosts: monitoring
+  collections:
+    - amazon.aws
+  vars:
+    region: "us-east-1"
+    GF_SECURITY_ADMIN_PASSWORD: "{{ lookup('env', 'GF_SECURITY_ADMIN_PASSWORD') }}"
+    DISCORD_WEBHOOK_TOKEN: "{{ lookup('env', 'DISCORD_WEBHOOK_TOKEN') }}"
+  roles:
+    - monitoring-docker

@@ -1,0 +1,74 @@
+---
+- name: Fetch secret from AWS Secrets Manager
+  set_fact:
+    secret_obj: "{{ lookup('amazon.aws.aws_secret', secret_name, region=region) | from_json }}"
+
+- name: Fetch all RDS instances
+  amazon.aws.rds_instance_info:
+    region: "{{ region }}"
+  register: rds_info
+
+- name: Get Redis Primary endpoint via AWS CLI
+  shell: |
+    aws elasticache describe-replication-groups \
+      --region {{ region }} \
+      --replication-group-id {{ redis_replication_group_id }} \
+      --output json
+  register: redis_rg_info_raw
+  delegate_to: localhost
+  become: false
+
+- name: Parse Redis primary endpoint
+  set_fact:
+    REDIS_ENDPOINT_TOKEN: >-
+      {{
+        (redis_rg_info_raw.stdout | from_json).ReplicationGroups[0].NodeGroups[0].PrimaryEndpoint.Address
+      }}
+
+- name: Set DB facts
+  set_fact:
+    DB_ENDPOINT_TOKEN: "{{ rds_info.instances[0].endpoint.address }}"
+    DB_NAME_TOKEN: "{{ secret_obj.db_name }}"
+    DB_USERNAME_TOKEN: "{{ secret_obj.db_username }}"
+    DB_USERPASSWORD_TOKEN: "{{ secret_obj.db_password }}"
+
+- name: Get ECR login password
+  command: >
+    aws ecr get-login-password --region {{ region }}
+  register: ecr_login_password
+  changed_when: false
+  no_log: true
+
+- name: Login to Amazon ECR
+  shell: |
+    echo "{{ ecr_login_password.stdout }}" | docker login --username AWS --password-stdin {{ aws_account_id }}.dkr.ecr.{{ region }}.amazonaws.com
+  args:
+    executable: /bin/bash
+
+- name: Pull image from ECR
+  docker_image:
+    name: "{{ docker_image }}"
+    source: pull
+
+- name: Stop docker container by name
+  docker_container:
+    name: schedule-backend
+    state: stopped
+  become: true
+  ignore_errors: true
+
+- name: Run docker container
+  docker_container:
+    name: schedule-backend
+    image: "{{ docker_image }}"
+    state: started
+    env:
+      DB_ENDPOINT_TOKEN: "{{ DB_ENDPOINT_TOKEN }}"
+      DB_NAME_TOKEN: "{{ DB_NAME_TOKEN }}"
+      DB_USERNAME_TOKEN: "{{ DB_USERNAME_TOKEN }}"
+      DB_USERPASSWORD_TOKEN: "{{ DB_USERPASSWORD_TOKEN }}"
+      REDIS_ENDPOINT_TOKEN: "{{ REDIS_ENDPOINT_TOKEN }}"
+
+    published_ports:
+      - "8080:8080"
+    restart_policy: unless-stopped

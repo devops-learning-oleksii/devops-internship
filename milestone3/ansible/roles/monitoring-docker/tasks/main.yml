@@ -1,0 +1,41 @@
+---
+- name: Copy docker folder to server
+  copy:
+    src: docker/
+    dest: /home/ubuntu/docker/
+    owner: ubuntu
+    group: ubuntu
+    mode: 0755
+  become: yes
+
+- name: Get backend and frontend Private IP
+  amazon.aws.ec2_instance_info:
+    region: "{{ region }}"
+    filters:
+      tag:Name:
+        - instance-frontend
+        - instance-backend
+        - instance-monitoring
+      instance-state-name: running
+  register: ec2_instances_info
+
+- name: Set facts for private IPs
+  set_fact:
+    frontend_private_ip: "{{ ec2_instances_info.instances | selectattr('tags.Name', 'equalto', 'instance-frontend') | map(attribute='private_ip_address') | list | first }}"
+    backend_private_ip: "{{ ec2_instances_info.instances | selectattr('tags.Name', 'equalto', 'instance-backend') | map(attribute='private_ip_address') | list | first }}"
+    monitoring_private_ip: "{{ ec2_instances_info.instances | selectattr('tags.Name', 'equalto', 'instance-monitoring') | map(attribute='private_ip_address') | list | first }}"
+
+- name: Create prometheus.yml
+  template:
+    src: prometheus.yml.j2
+    dest: /home/ubuntu/docker/prometheus/prometheus.yml
+  become: yes
+
+- name: Run docker compose with env var
+  ansible.builtin.shell: docker compose up -d
+  args:
+    chdir: /home/ubuntu/docker/
+  environment:
+    GF_SECURITY_ADMIN_PASSWORD: "{{ GF_SECURITY_ADMIN_PASSWORD }}"
+    DISCORD_WEBHOOK_TOKEN: "{{ DISCORD_WEBHOOK_TOKEN }}"
+  become: yes
