@@ -4,7 +4,7 @@ data "aws_secretsmanager_secret_version" "creds" {
 
 locals {
   # Load variables from JSON file
-  config = jsondecode(file("../variables.json"))
+  config = jsondecode(file(var.json_file))
 
   # Extract sections for easier access
   global           = local.config.global

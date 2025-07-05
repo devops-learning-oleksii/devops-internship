@@ -35,7 +35,7 @@ pipeline {
             steps {
                 dir('backend-project/backend/') {
                     script {
-                        sh 'gradle test' // build + test
+                        sh 'gradle test'
                     }
                 }
             }
@@ -44,7 +44,7 @@ pipeline {
         stage('Backend Code Review') {
             environment {
                 PROJECT_KEY = 'class-schedule-backend'
-                BUILD_VERSION = '1.0' // set build version 1.0.{number_of_build}
+                BUILD_VERSION = '1.0'
                 SONAR_TOKEN = credentials('SONAR_TOKEN')
                 SONAR_URL = credentials('SONAR_URL')
             }
@@ -66,7 +66,7 @@ pipeline {
                 dir('backend-project') {
                     script {
                         sh 'unzip -o backend/build/libs/class_schedule.war -d ./ROOT/'
-                        sh 'docker build -t backend-test:latest .' // change "latest" to version
+                        sh 'docker build -t backend-test:latest .'
                     }
                 }
             }
