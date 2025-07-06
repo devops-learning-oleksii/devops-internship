@@ -1,15 +1,22 @@
+terraform {
+  required_providers {
+    cloudflare = {
+      source  = "cloudflare/cloudflare"
+      version = "~> 4.0"
+    }
+  }
+}
+
 data "aws_secretsmanager_secret_version" "creds" {
   secret_id = "aws-secret-2025-06-27-08-42-51"
 }
 
 locals {
-  # Load variables from JSON file
-  config = jsondecode(file(var.json_file))
-
-  # Extract sections for easier access
-  global           = local.config.global
-  terraform_config = local.config.terraform
-  ansible_config   = local.config.ansible
+  config            = jsondecode(file(var.json_file))
+  global            = local.config.global
+  terraform_config  = local.config.terraform
+  ansible_config    = local.config.ansible
+  cloudflare_config = local.config.cloudflare
 
   db_creds = jsondecode(
     data.aws_secretsmanager_secret_version.creds.secret_string
@@ -225,3 +232,26 @@ module "ssh_config" {
   depends_on = [module.ec2_instances]
 }
 
+provider "cloudflare" {}
+
+data "cloudflare_zone" "domain" {
+  name = local.cloudflare_config.domain_name
+}
+
+resource "cloudflare_record" "monitoring" {
+  zone_id = data.cloudflare_zone.domain.id
+  name    = local.cloudflare_config.dns_config.monitoring_name
+  content = module.ec2_instances["monitoring"].public_ip
+  type    = "A"
+  ttl     = local.cloudflare_config.dns_config.ttl
+  proxied = local.cloudflare_config.dns_config.proxied
+}
+
+resource "cloudflare_record" "proxy" {
+  zone_id = data.cloudflare_zone.domain.id
+  name    = local.cloudflare_config.dns_config.main_record_name
+  content = module.ec2_instances["proxy"].public_ip
+  type    = "A"
+  ttl     = local.cloudflare_config.dns_config.ttl
+  proxied = local.cloudflare_config.dns_config.proxied
+}
