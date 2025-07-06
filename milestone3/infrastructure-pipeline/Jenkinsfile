@@ -1,0 +1,68 @@
+pipeline {
+    agent { label 'local-user' }
+    parameters {
+        booleanParam(name: 'AUTO_RUN_CD', defaultValue: true)
+    }
+    stages {
+        stage('terraform') {
+            steps {
+                withCredentials([
+                    string(credentialsId: 'AWS_ACCESS_KEY_ID', variable: 'AWS_ACCESS_KEY_ID'),
+                    string(credentialsId: 'AWS_SECRET_ACCESS_KEY', variable: 'AWS_SECRET_ACCESS_KEY'),
+                    string(credentialsId: 'CLOUDFLARE_API_TOKEN', variable: 'CLOUDFLARE_API_TOKEN'),
+                    file(credentialsId:'variables.json', variable: 'json'),
+                    file(credentialsId:'ssh_file', variable: 'key')]) {
+                        script {
+                            dir("$env.home/terraform/infrastructure") {
+                                sh '''
+                                cp \$key ./oleksii-key.pem && chmod 600 ./oleksii-key.pem && \
+                                terraform apply -var="json_file=$json" -auto-approve
+                                '''
+                            }
+                        }
+                }
+            }
+        }
+        stage('ansible') {
+            environment {
+                SECRET_NAME = credentials('aws-secret-name')           
+                AWS_REGION = 'us-east-1'
+                S3_BUCKET_NAME = credentials('S3_BUCKET_NAME')
+                GF_SECURITY_ADMIN_PASSWORD = credentials('GRAFANA_PASSWORD')
+                DISCORD_WEBHOOK_TOKEN = credentials('DISCORD_WEBHOOK')
+            }
+            steps {
+                withCredentials([
+                    string(credentialsId: 'AWS_ACCESS_KEY_ID', variable: 'AWS_ACCESS_KEY_ID'),
+                    string(credentialsId: 'AWS_SECRET_ACCESS_KEY', variable: 'AWS_SECRET_ACCESS_KEY')]) {
+                        script {
+                            dir("${env.HOME}/ansible"){
+                                sh '''
+                                    bash -c "
+                                        source .venv/bin/activate
+                                        ansible-playbook -i inventory.ini init.yml
+                                    "
+                                '''
+                            }
+                         }
+                    }
+            }
+        }
+        stage('run CI') {
+            parallel {
+                stage('frontend-CI') {
+                    steps {
+                        build job: "frontend-CI", wait: false,
+                        parameters: [booleanParam(name: 'AUTO_RUN_CD', value: params.AUTO_RUN_CD)]
+                    }
+                }
+                stage('backend-CI') {
+                    steps {
+                        build job: "backend-CI", wait: false,
+                        parameters: [booleanParam(name: 'AUTO_RUN_CD', value: params.AUTO_RUN_CD)]
+                    }
+                }
+            }
+        }
+    }
+}
