@@ -1,0 +1,87 @@
+pipeline {
+    agent any
+
+    parameters {
+            booleanParam(name: 'AUTO_RUN_CD', defaultValue: false)
+        }
+
+    tools {
+        jdk 'jdk11'
+        gradle 'gradle-6.9.4'
+    }
+
+    stages {
+        stage('Checkout from GitHub') {
+            steps {
+                git branch: 'main',
+			    url: 'https://github.com/NightPhoenixSC2/jenkins-backend.git',
+		    	credentialsId: 'git'
+            }
+        }
+
+        stage('Build Backend') {
+            steps {
+                dir('backend-project') {
+                    dir('backend') {
+                        script {
+                            sh 'gradle build -x test'
+                        }
+                    }
+                }
+            }
+        }
+
+        stage('Backend Tests') {
+            steps {
+                dir('backend-project/backend/') {
+                    script {
+                        sh 'gradle test' // build + test
+                    }
+                }
+            }
+        }
+
+        stage('Backend Code Review') {
+            environment {
+                PROJECT_KEY = 'class-schedule-backend'
+                BUILD_VERSION = '1.0' // set build version 1.0.{number_of_build}
+                SONAR_TOKEN = credentials('SONAR_TOKEN')
+                SONAR_URL = credentials('SONAR_URL')
+            }
+            steps {
+                dir('backend-project/backend/') {
+                    script {
+                        sh 'sed -i -e "s|PROJECT_KEY|${PROJECT_KEY}|g" \
+                            -e "s|BUILD_VERSION|${BUILD_VERSION}|g" \
+                            -e "s|SONAR_TOKEN|${SONAR_TOKEN}|g" \
+                            -e "s|SONAR_URL|${SONAR_URL}|g" "sonar-project.properties"'
+                        sh 'sonar-scanner'
+                    }
+                }
+            }
+        }
+
+        stage('Build Backend Docker Image') {
+            steps {
+                dir('backend-project') {
+                    script {
+                        sh 'unzip -o backend/build/libs/class_schedule.war -d ./ROOT/'
+                        sh 'docker build -t backend-test:latest .' // change "latest" to version
+                    }
+                }
+            }
+        }
+
+        stage('Move Docker Image to DockerHub') {
+            steps {
+                withCredentials([usernamePassword(credentialsId: 'DockerHub', usernameVariable: 'DOCKERHUB_USERNAME', passwordVariable: 'DOCKERHUB_TOKEN')]) {
+                    sh '''
+                        echo $DOCKERHUB_TOKEN | docker login -u $DOCKERHUB_USERNAME --password-stdin
+                        docker tag backend-test:latest $DOCKERHUB_USERNAME/4947-backend:latest
+                        docker push $DOCKERHUB_USERNAME/4947-backend:latest
+                    '''
+                }
+            }
+        }
+    }
+}

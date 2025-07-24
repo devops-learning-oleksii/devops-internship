@@ -1,0 +1,69 @@
+pipeline {
+    agent { label 'local-user' }
+    stages {
+        stage('terraform') {
+            environment {
+                GOOGLE_APPLICATION_CREDENTIALS="${env.HOME}/milestone4/terraform/terraform-sa-key.json"
+            }
+            steps {
+                withCredentials([
+                    string(credentialsId: 'CLOUDFLARE_API_TOKEN', variable: 'CLOUDFLARE_API_TOKEN')]) {
+                        script {
+                            dir("$env.HOME/milestone4/terraform") {
+                                sh 'terraform apply -auto-approve'
+                                env.SERVER_IP = sh(
+                                    script: "terraform output -raw server_node_public_ip",
+                                    returnStdout: true
+                                ).trim()
+                            }
+                        }
+                }
+            }
+        }
+        stage('ansible') {
+            environment {
+                ansible_user = 'nightphoenix'
+                admin_password = credentials('admin_password')
+                DATABASE_NAME = credentials('DATABASE_NAME')
+                DATABASE_USER = credentials('DATABASE_USER')
+                DATABASE_PASSWORD = credentials('DATABASE_PASSWORD')
+                GITHUB_TOKEN = credentials('GITHUB_TOKEN')
+            }
+            steps {
+                script {
+                    dir("${env.HOME}/milestone4/ansible") {
+                        sh '''
+                            sleep 25
+                            bash -c "
+                                source .venv/bin/activate
+                                ansible-playbook -i inventory.ini init.yml -vvvv \
+                                    -e server_ip=$SERVER_IP \
+                                    -e user=$ansible_user \
+                                    -e admin_password=$admin_password \
+                                    -e DATABASE_NAME=$DATABASE_NAME \
+                                    -e DATABASE_USER=$DATABASE_USER \
+                                    -e DATABASE_PASSWORD=$DATABASE_PASSWORD \
+                                    -e DOMAIN=https://api.proxy-test.xyz/ \
+                                    -e GITHUB_TOKEN=$GITHUB_TOKEN
+                            "
+                        '''
+                    }
+                }
+            }
+        }
+        stage('run CI') {
+            parallel {
+                stage('frontend-CI') {
+                    steps {
+                        build job: "frontend-CI"
+                    }
+                }
+                stage('backend-CI') {
+                    steps {
+                        build job: "backend-CI"
+                    }
+                }
+            }
+        }
+    }
+}
