@@ -1,0 +1,14 @@
+image:
+  repository: redis
+  tag: "7.2"
+  pullPolicy: IfNotPresent
+
+service:
+  type: LoadBalancer
+  port: 6379
+  targetPort: 6379
+
+replicaCount: 1
+
+nodeSelector:
+  node-role: "worker"

@@ -1,0 +1,30 @@
+apiVersion: argoproj.io/v1alpha1
+kind: Application
+metadata:
+  name: loki
+  namespace: argocd
+spec:
+  project: default
+  source:
+    repoURL: "https://grafana.github.io/helm-charts"
+    chart: loki
+    targetRevision: 6.32.0
+    helm:
+      parameters:
+        - name: chunksCache.enabled
+          value: "false"
+        - name: loki.storage.bucketNames.chunks
+          value: loki-chunks
+        - name: loki.storage.bucketNames.ruler
+          value: loki-ruler
+        - name: loki.storage.bucketNames.admin
+          value: loki-admin
+        - name: loki.useTestSchema
+          value: "true"
+  destination:
+    server: https://kubernetes.default.svc
+    namespace: default
+  syncPolicy:
+    automated:
+      prune: true
+      selfHeal: true

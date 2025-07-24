@@ -1,0 +1,47 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: {{ include "frontend.fullname" . }}
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: {{ include "frontend.name" . }}
+  template:
+    metadata:
+      labels:
+        app: {{ include "frontend.name" . }}
+    spec:
+      nodeSelector:
+{{ toYaml .Values.nodeSelector | indent 8 }}
+      containers:
+        - name: frontend
+          image: "{{ .Values.image.repository }}:{{ .Values.image.tag }}"
+          imagePullPolicy: {{ .Values.image.pullPolicy }}
+          env:
+            - name: DOMAIN_TOKEN
+              valueFrom:
+                secretKeyRef:
+                  name: {{ .Values.env.secretName }}
+                  key: DOMAIN_TOKEN
+          ports:
+            - containerPort: 3000
+          volumeMounts:
+            - name: nginx-logs
+              mountPath: /var/log/nginx
+        - name: promtail
+          image: grafana/promtail:3.0.0
+          args:
+            - -config.file=/etc/promtail/promtail.yaml
+          volumeMounts:
+            - name: nginx-logs
+              mountPath: /var/log/nginx
+            - name: promtail-config
+              mountPath: /etc/promtail
+      volumes:
+        - name: nginx-logs
+          persistentVolumeClaim:
+            claimName: frontend-logs-pvc
+        - name: promtail-config
+          configMap:
+            name: promtail-config-frontend

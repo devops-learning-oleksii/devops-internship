@@ -1,0 +1,22 @@
+image:
+  repository: slycrab/4947-frontend
+  tag: latest
+  pullPolicy: IfNotPresent
+
+service:
+  type: LoadBalancer
+  port: 80
+  targetPort: 3000
+
+nodeSelector:
+  node-role: "worker"
+
+env:
+  secretName: frontend-env-secret
+
+ingress:
+  enabled: true
+  host: proxy-test.xyz
+  tls:
+    enabled: true
+    secretName: my-tls-secret

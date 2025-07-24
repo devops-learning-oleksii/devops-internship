@@ -1,0 +1,45 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: {{ include "postgresql.fullname" . }}
+spec:
+  replicas: {{ .Values.replicaCount }}
+  selector:
+    matchLabels:
+      app: {{ include "postgresql.name" . }}
+  template:
+    metadata:
+      labels:
+        app: {{ include "postgresql.name" . }}
+    spec:
+      nodeSelector:
+{{ toYaml .Values.nodeSelector | indent 8 }}
+      containers:
+        - name: postgres
+          image: "{{ .Values.image.repository }}:{{ .Values.image.tag }}"
+          imagePullPolicy: {{ .Values.image.pullPolicy }}
+          env:
+            - name: POSTGRES_DB
+              valueFrom:
+                secretKeyRef:
+                  name: {{ .Values.postgresql.dbSecretName }}
+                  key: DB_NAME_TOKEN
+            - name: POSTGRES_USER
+              valueFrom:
+                secretKeyRef:
+                  name: {{ .Values.postgresql.dbSecretName }}
+                  key: DB_USERNAME_TOKEN
+            - name: POSTGRES_PASSWORD
+              valueFrom:
+                secretKeyRef:
+                  name: {{ .Values.postgresql.dbSecretName }}
+                  key: DB_USERPASSWORD_TOKEN
+          ports:
+            - containerPort: 5432
+          volumeMounts:
+            - name: init-db
+              mountPath: /docker-entrypoint-initdb.d
+      volumes:
+        - name: init-db
+          configMap:
+            name: {{ include "postgresql.fullname" . }}-initdb

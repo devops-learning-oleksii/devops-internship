@@ -1,0 +1,24 @@
+image:
+  repository: slycrab/4947-backend
+  tag: latest
+  pullPolicy: IfNotPresent
+
+service:
+  type: LoadBalancer
+  port: 8080
+  targetPort: 8080
+
+env:
+  REDIS_ENDPOINT_TOKEN: "redis-redis"
+  DB_ENDPOINT_TOKEN: "psql-postgresql"
+  dbSecretName: db-secret
+
+nodeSelector:
+  node-role: "worker"
+
+ingress:
+  enabled: true
+  host: api.proxy-test.xyz
+  tls:
+    enabled: true
+    secretName: my-tls-secret

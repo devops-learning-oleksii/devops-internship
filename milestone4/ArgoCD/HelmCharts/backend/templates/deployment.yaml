@@ -1,0 +1,59 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: {{ include "backend.fullname" . }}
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: {{ include "backend.name" . }}
+  template:
+    metadata:
+      labels:
+        app: {{ include "backend.name" . }}
+    spec:
+      containers:
+        - name: backend
+          image: "{{ .Values.image.repository }}:{{ .Values.image.tag }}"
+          imagePullPolicy: {{ .Values.image.pullPolicy }}
+          ports:
+            - containerPort: 8080
+          env:
+            - name: REDIS_ENDPOINT_TOKEN
+              value: {{ .Values.env.REDIS_ENDPOINT_TOKEN | quote }}
+            - name: DB_ENDPOINT_TOKEN
+              value: {{ .Values.env.DB_ENDPOINT_TOKEN | quote }}
+            - name: DB_NAME_TOKEN
+              valueFrom:
+                secretKeyRef:
+                  name: {{ .Values.env.dbSecretName }}
+                  key: DB_NAME_TOKEN
+            - name: DB_USERNAME_TOKEN
+              valueFrom:
+                secretKeyRef:
+                  name: {{ .Values.env.dbSecretName }}
+                  key: DB_USERNAME_TOKEN
+            - name: DB_USERPASSWORD_TOKEN
+              valueFrom:
+                secretKeyRef:
+                  name: {{ .Values.env.dbSecretName }}
+                  key: DB_USERPASSWORD_TOKEN
+          volumeMounts:
+            - name: tomcat-logs
+              mountPath: /opt/tomcat/logs
+        - name: promtail
+          image: grafana/promtail:3.0.0
+          args:
+            - -config.file=/etc/promtail/promtail.yaml
+          volumeMounts:
+            - name: tomcat-logs
+              mountPath: /opt/tomcat/logs
+            - name: promtail-config
+              mountPath: /etc/promtail
+      volumes:
+        - name: tomcat-logs
+          persistentVolumeClaim:
+            claimName: tomcat-logs-pvc
+        - name: promtail-config
+          configMap:
+            name: promtail-config

@@ -1,0 +1,24 @@
+image:
+  repository: postgres
+  tag: "15"
+  pullPolicy: IfNotPresent
+
+service:
+  type: LoadBalancer
+  port: 5432
+  targetPort: 5432
+
+replicaCount: 1
+
+nodeSelector:
+  node-role: "worker"
+
+postgresql:
+  dbSecretName: db-secret
+
+ingress:
+  enabled: false
+  host: ""
+  tls:
+    enabled: false
+    secretName: ""
