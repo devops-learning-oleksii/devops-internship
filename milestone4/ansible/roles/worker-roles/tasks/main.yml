@@ -1,0 +1,8 @@
+---
+- name: Label nodes with sleep between
+  shell: |
+    kubectl label node worker-node-1 node-role=worker --overwrite
+    sleep 5
+    kubectl label node worker-node-2 node-role=worker --overwrite
+  args:
+    executable: /bin/bash

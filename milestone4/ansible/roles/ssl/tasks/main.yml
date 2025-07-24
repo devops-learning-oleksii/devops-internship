@@ -1,0 +1,27 @@
+---
+- name: Copy ssl folder
+  copy:
+    src: ssl/
+    dest: /home/{{ user }}/ssl/
+    owner: "{{ user }}"
+    group: "{{ user }}"
+    mode: "0755"
+
+- name: create ssl secret in default namespace
+  shell: |
+    kubectl create secret tls my-tls-secret \
+    --cert=/home/{{ user }}/ssl/tls.pem \
+    --key=/home/{{ user }}/ssl/tls.key \
+    --namespace=default
+  args:
+    executable: /bin/bash
+
+- name: create ssl secret in argocd namespace
+  shell: |
+    kubectl create namespace argocd
+    kubectl create secret tls my-tls-secret \
+    --cert=/home/{{ user }}/ssl/tls.pem \
+    --key=/home/{{ user }}/ssl/tls.key \
+    --namespace=argocd
+  args:
+    executable: /bin/bash
