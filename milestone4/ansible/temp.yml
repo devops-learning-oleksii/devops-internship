@@ -18,7 +18,6 @@
     - install-helm
     - install-metallb
     - worker-roles
-    - secrets
-    - argocd
-    - crds
     - monitoring
+    - redis
+    - psql

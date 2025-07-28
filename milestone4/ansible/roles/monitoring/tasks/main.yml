@@ -8,6 +8,7 @@
     mode: "0755"
 
 - name: Apply Loki dashboard
-  shell: kubectl apply -f /home/{{ user }}/monitoring/templates/loki-basic-dashboard.yaml
+  shell: |
+    kubectl apply -f /home/{{ user }}/monitoring/templates/loki-basic-dashboard.yaml -n monitoring
   args:
     executable: /bin/bash

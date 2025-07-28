@@ -1,0 +1,24 @@
+- name: download CRDs
+  shell: |
+    BASE_URL="https://raw.githubusercontent.com/prometheus-community/helm-charts/refs/heads/main/charts/kube-prometheus-stack/charts/crds/crds"
+    mkdir -P /home/{{ user }}/crds
+    wget -P /home/{{ user }}/crds "$BASE_URL/crd-alertmanagerconfigs.yaml"
+    wget -P /home/{{ user }}/crds "$BASE_URL/crd-alertmanagers.yaml"
+    wget -P /home/{{ user }}/crds "$BASE_URL/crd-probes.yaml"
+    wget -P /home/{{ user }}/crds "$BASE_URL/crd-podmonitors.yaml"
+    wget -P /home/{{ user }}/crds "$BASE_URL/crd-prometheusagents.yaml"
+    wget -P /home/{{ user }}/crds "$BASE_URL/crd-prometheuses.yaml"
+    wget -P /home/{{ user }}/crds "$BASE_URL/crd-prometheusrules.yaml"
+    wget -P /home/{{ user }}/crds "$BASE_URL/crd-scrapeconfigs.yaml"
+    wget -P /home/{{ user }}/crds "$BASE_URL/crd-servicemonitors.yaml"
+    wget -P /home/{{ user }}/crds "$BASE_URL/crd-thanosrulers.yaml"
+  args:
+    executable: /bin/bash
+
+- name: create CRDs
+  shell: |
+    kubectl create -f /home/{{ user }}/crds
+  environment:
+    KUBECONFIG: "/home/{{ user }}/.kube/config"
+  args:
+    executable: /bin/bash

@@ -39,6 +39,8 @@
     argocd login argo.proxy-test.xyz --username admin --password $pass
     argocd repo add https://github.com/NightPhoenixSC2/ArgoCD.git --username NightPhoenixSC2 --password {{ GITHUB_TOKEN }}
     kubectl apply -f /home/{{ user }}/argocd/root.yml -n argocd
+    argocd account update-password --current-password $pass --new-password {{ ARGOCD_PASSWORD }}
+    echo {{ ARGOCD_PASSWORD }} > /home/{{ user }}/test
   environment:
     KUBECONFIG: "/home/{{ user }}/.kube/config"
   args:
