@@ -1,0 +1,62 @@
+{
+    "global": {
+        "environment": "dev",
+        "aws_region": "us-east-1",
+        "project": "AWS-Schedule"
+    },
+    "terraform": {
+        "vpc": {
+            "cidr": "10.2.0.0/16",
+            "availability_zones": [
+                "us-east-1a",
+                "us-east-1b"
+            ],
+            "private_subnet_cidrs": [
+                "10.2.1.0/24",
+                "10.2.2.0/24"
+            ],
+            "public_subnet_cidrs": [
+                "10.2.11.0/24",
+                "10.2.12.0/24"
+            ]
+        },
+        "tags": {
+            "Environment": "dev",
+            "Project": "AWS-Schedule"
+        },
+        "security_groups": {
+            "server_sg": {
+                "ingress_ports_tcp": [22, 80, 443, 2379, 2380, 10250, 51820, 51821, 5001, 6443],
+                "ingress_ports_udp": [8472],
+                "allowed_cidr_blocks": ["0.0.0.0/0"]
+            },
+            "worker_sg": {
+                "ingress_ports_tcp": [22, 10250, 51820, 51821, 5001, 6443],
+                "ingress_ports_udp": [8472],
+                "allowed_cidr_blocks": ["10.2.0.0/16"]
+            }
+        },
+        "instances": {
+            "ec2_instances": {
+                "server": {
+                    "ami": "ami-084568db4383264d4",
+                    "instance_type": "t3.micro",
+                    "key_name": "aws-ssh",
+                    "security_group": "server_sg",
+                    "subnet_type": "public",
+                    "public_ip": true,
+                    "count": 1
+                },
+                "worker": {
+                    "ami": "ami-084568db4383264d4",
+                    "instance_type": "t3.micro",
+                    "key_name": "aws-ssh",
+                    "security_group": "worker_sg",
+                    "subnet_type": "private",
+                    "public_ip": false,
+                    "count": 2
+                }
+            }
+        }
+    }
+}
