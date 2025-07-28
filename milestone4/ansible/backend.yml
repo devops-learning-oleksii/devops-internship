@@ -1,4 +1,0 @@
-- hosts: server
-  become: true
-  roles:
-    - backend
