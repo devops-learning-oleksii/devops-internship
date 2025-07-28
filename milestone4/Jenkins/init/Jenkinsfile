@@ -28,6 +28,7 @@ pipeline {
                 DATABASE_USER = credentials('DATABASE_USER')
                 DATABASE_PASSWORD = credentials('DATABASE_PASSWORD')
                 GITHUB_TOKEN = credentials('GITHUB_TOKEN')
+				ARGOCD_PASSWORD = credentials('ARGOCD_PASSWORD')
             }
             steps {
                 script {
@@ -44,7 +45,8 @@ pipeline {
                                     -e DATABASE_USER=$DATABASE_USER \
                                     -e DATABASE_PASSWORD=$DATABASE_PASSWORD \
                                     -e DOMAIN=https://api.proxy-test.xyz/ \
-                                    -e GITHUB_TOKEN=$GITHUB_TOKEN
+                                    -e GITHUB_TOKEN=$GITHUB_TOKEN \
+									-e ARGOCD_PASSWORD=$ARGOCD_PASSWORD
                             "
                         '''
                     }
