@@ -1,0 +1,24 @@
+---
+- hosts: server
+  become: true
+  roles:
+    - server-init
+
+- hosts: worker-node-1,worker-node-2
+  become: true
+  vars:
+    k3s_node_token: "{{ hostvars[groups['server'][0]]['k3s_node_token'] }}"
+  roles:
+    - worker-init
+
+- hosts: server
+  become: true
+  roles:
+    - ssl
+    - install-helm
+    - install-metallb
+    - worker-roles
+    - secrets
+    - argocd
+    - crds
+    - monitoring

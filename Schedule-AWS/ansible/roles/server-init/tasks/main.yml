@@ -1,0 +1,52 @@
+---
+- name: Start k3s server
+  shell: curl -sfL https://get.k3s.io | sh -s - server
+  args:
+    executable: /bin/bash
+
+- name: Wait for node-token to be created
+  wait_for:
+    path: /var/lib/rancher/k3s/server/node-token
+    state: present
+    timeout: 60
+
+- name: Read k3s node token
+  slurp:
+    src: /var/lib/rancher/k3s/server/node-token
+  register: k3s_token_raw
+
+- name: Set k3s token fact for all hosts (as ENV for next roles)
+  set_fact:
+    k3s_node_token: "{{ k3s_token_raw.content | b64decode | trim }}"
+  delegate_to: localhost
+  run_once: true
+
+- name: Change ownership of k3s.yaml
+  become: true
+  become_user: root
+  ansible.builtin.command: chown root:{{ ansible_user_id }} /etc/rancher/k3s/k3s.yaml
+
+- name: Set permissions for k3s.yaml
+  become: true
+  become_user: root
+  ansible.builtin.file:
+    path: /etc/rancher/k3s/k3s.yaml
+    mode: '0644'
+
+- name: Create .kube directory
+  become: true
+  become_user: "{{ user }}"
+  file:
+    path: /home/{{ user }}/.kube
+    state: directory
+    mode: '0755'
+
+- name: Copy k3s.yaml to user's kube config
+  become: true
+  ansible.builtin.copy:
+    src: /etc/rancher/k3s/k3s.yaml
+    dest: /home/{{ user }}/.kube/config
+    remote_src: yes
+    owner: "{{ user }}"
+    group: "{{ user }}"
+    mode: '0600'

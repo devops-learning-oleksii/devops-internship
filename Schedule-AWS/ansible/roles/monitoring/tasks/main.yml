@@ -1,0 +1,14 @@
+---
+- name: Copy monitoring folder
+  copy:
+    src: monitoring/
+    dest: /home/{{ user }}/monitoring/
+    owner: "{{ user }}"
+    group: "{{ user }}"
+    mode: "0755"
+
+- name: Apply Loki dashboard
+  shell: |
+    kubectl apply -f /home/{{ user }}/monitoring/templates/loki-basic-dashboard.yaml -n monitoring
+  args:
+    executable: /bin/bash

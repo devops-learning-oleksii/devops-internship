@@ -1,0 +1,23 @@
+---
+- name: install metallb
+  shell: kubectl apply -f https://raw.githubusercontent.com/metallb/metallb/v0.15.2/config/manifests/metallb-native.yaml
+  args:
+    executable: /bin/bash
+
+- name: Copy metallb config
+  copy:
+    src: metallb-config.yaml
+    dest: /home/{{ user }}/metallb-config.yaml
+    owner: "{{ user }}"
+    group: "{{ user }}"
+    mode: '0644'
+
+- name: Wait for metallb pods to be ready
+  shell: kubectl -n metallb-system wait --for=condition=Ready pod --all --timeout=120s
+  args:
+    executable: /bin/bash
+
+- name: metallb
+  shell: kubectl apply -f /home/{{ user }}/metallb-config.yaml
+  args:
+    executable: /bin/bash

@@ -1,0 +1,57 @@
+prometheus-node-exporter:
+  service:
+    port: 9110
+  containerPort: 9110
+
+grafana:
+  ingress:
+    enabled: true
+    hosts:
+      - monitoring.proxy-test.xyz
+    tls:
+      - secretName: my-tls-secret
+        hosts:
+          - monitoring.proxy-test.xyz
+
+  adminPassword: "{{ admin_password }}"
+
+  datasources:
+    datasources.yaml:
+      apiVersion: 1
+      datasources:
+        - name: Loki - foo
+          type: loki
+          access: proxy
+          url: http://loki-gateway.default.svc.cluster.local/
+          jsonData:
+            maxLines: 1000
+            httpHeaderName1: "X-Scope-OrgID"
+          secureJsonData:
+            httpHeaderValue1: "foo"
+
+  sidecar:
+    dashboards:
+      enabled: true
+      label: grafana_dashboard
+      searchNamespace: default
+
+  dashboardProviders:
+    dashboardproviders.yaml:
+      apiVersion: 1
+      providers:
+        - name: 'default'
+          orgId: 1
+          folder: ''
+          type: file
+          disableDeletion: false
+          editable: true
+          options:
+            path: /var/lib/grafana/dashboards
+
+  extraVolumeMounts:
+    - name: dashboards
+      mountPath: /var/lib/grafana/dashboards
+
+  extraVolumes:
+    - name: dashboards
+      emptyDir: {}
