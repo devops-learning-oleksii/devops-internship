@@ -92,7 +92,7 @@ module "ec2_instance" {
 
     for_each = local.ec2_instances_flat
 
-    name                   = "${each.value.base_name}-node-${each.value.index}"
+    name = "${each.value.base_name}-node-${each.value.index}"
     ami = each.value.ami
     instance_type = each.value.instance_type
     key_name = each.value.key_name
@@ -113,4 +113,19 @@ module "ec2_instance" {
 
     depends_on = [module.vpc]
 
+}
+
+module "ssh_config" {
+  source = "./modules/ssh_config"
+
+  bastion_public_ip = module.ec2_instance["server-1"].public_ip
+  machines          = local.terraform_config.ssh.ssh_machines
+  machine_private_ips = {
+    for machine in local.terraform_config.ssh.ssh_machines :
+    machine => module.ec2_instance[machine].private_ip
+  }
+  ssh_user     = local.terraform_config.ssh.ssh_user
+  ssh_key_path = local.terraform_config.ssh.ssh_key_path
+
+  depends_on = [module.ec2_instance]
 }
