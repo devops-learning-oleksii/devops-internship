@@ -35,9 +35,9 @@
 
 - name: Create .kube directory
   become: true
-  become_user: nightphoenix
+  become_user: "{{ user }}"
   file:
-    path: /home/nightphoenix/.kube
+    path: /home/{{ user }}/.kube
     state: directory
     mode: '0755'
 
@@ -45,8 +45,8 @@
   become: true
   ansible.builtin.copy:
     src: /etc/rancher/k3s/k3s.yaml
-    dest: /home/nightphoenix/.kube/config
+    dest: /home/{{ user }}/.kube/config
     remote_src: yes
-    owner: nightphoenix
-    group: nightphoenix
+    owner: "{{ user }}"
+    group: "{{ user }}"
     mode: '0600'
