@@ -129,3 +129,21 @@ module "ssh_config" {
 
   depends_on = [module.ec2_instance]
 }
+
+# Use aws_route53_zone resource to create zone or just copy your zone id to aws_route53_record resource so NS will be static
+
+# resource "aws_route53_zone" "main" {
+#   name = local.terraform_config.domain_name 
+# }
+
+
+###
+resource "aws_route53_record" "a_records" {
+  for_each =  toset(["argo", "monitoring", "api", "@"]) # List of subdomains
+
+  zone_id = loca.terraform_config.zone_id #YOUR_ZONE_ID
+  name    = each.key == "@" ? local.terraform_config.domain_name : "${each.key}.${local.terraform_config.domain_name}"
+  type    = "A"
+  ttl     = 300
+  records = [module.ec2_instance["server-1"].public_ip]
+}

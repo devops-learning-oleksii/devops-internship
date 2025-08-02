@@ -5,6 +5,8 @@
         "project": "AWS-Schedule"
     },
     "terraform": {
+        "domain_name": "YOUR_DOMAIN_NAME",
+        "zone_id": "YOUR_ZONE_ID",
         "vpc": {
             "cidr": "10.2.0.0/16",
             "availability_zones": [
@@ -63,7 +65,8 @@
             "ssh_key_path": "~/.ssh/aws-ssh.pem",
             "ssh_machines": [
                 "worker-1",
-                "worker-2"
+                "worker-2",
+		        "worker-3"
             ]
         }
     }
