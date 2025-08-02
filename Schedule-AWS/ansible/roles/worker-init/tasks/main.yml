@@ -1,6 +1,7 @@
 ---
 - name: install k3s agent
   shell: |
-    curl -sfL https://get.k3s.io | K3S_URL=https://{{ server_ip }}:6443 K3S_TOKEN={{ k3s_node_token }} sh -
+    curl -sfL https://get.k3s.io | K3S_URL=https://{{ server_ip }}:6443 K3S_TOKEN={{ k3s_node_token }} K3S_NODE_NAME={{ node_name }} sh -
+    echo {{ node_name }} > /home/ubuntu/test
   args:
     executable: /bin/bash

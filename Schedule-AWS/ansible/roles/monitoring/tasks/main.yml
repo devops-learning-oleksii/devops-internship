@@ -9,6 +9,6 @@
 
 - name: Apply Loki dashboard
   shell: |
-    kubectl apply -f /home/{{ user }}/monitoring/templates/loki-basic-dashboard.yaml -n monitoring
+    kubectl apply -f /home/{{ user }}/monitoring/templates/loki-basic-dashboard.yaml
   args:
     executable: /bin/bash

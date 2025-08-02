@@ -4,7 +4,7 @@
   roles:
     - server-init
 
-- hosts: worker-node-1,worker-node-2
+- hosts: worker-node-1,worker-node-2,worker-node-3
   become: true
   vars:
     k3s_node_token: "{{ hostvars[groups['server'][0]]['k3s_node_token'] }}"
