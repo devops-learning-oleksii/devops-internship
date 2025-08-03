@@ -3,7 +3,8 @@
 
 ## Terraform
 ### - Secretmanager `store secrets` 
-### ✅ - S3 Bucket `store dump and tfstate`
+### ✅ - S3 Bucket `store tfstate`
+### - S3 Bucket `store dump`
 ### ✅ - EC2 `vms to run k3s` + VPC `network`
 ### - RDS `postgresql` + ElasctiCache `redis`
 ### - IAM roles `provide to EC2 VMs roles`
