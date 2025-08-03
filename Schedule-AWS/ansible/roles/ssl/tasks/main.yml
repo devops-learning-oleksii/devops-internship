@@ -1,27 +1,48 @@
 ---
-- name: Copy ssl folder
-  copy:
-    src: ssl/
-    dest: /home/{{ user }}/ssl/
-    owner: "{{ user }}"
-    group: "{{ user }}"
-    mode: "0755"
-
-- name: create ssl secret in default namespace
+- name: install cert-manager
   shell: |
-    kubectl create secret tls my-tls-secret \
-    --cert=/home/{{ user }}/ssl/tls.pem \
-    --key=/home/{{ user }}/ssl/tls.key \
-    --namespace=default
+    kubectl create namespace argocd
+    kubectl create namespace cert-manager
+    kubectl create secret generic route53-credentials-secret \
+    --from-literal=aws_access_key_id={{ aws_access_key_id }} \
+    --from-literal=aws_secret_access_key={{ aws_secret_access_key }} \
+    -n cert-manager
+    kubectl apply -f https://github.com/cert-manager/cert-manager/releases/latest/download/cert-manager.yaml
+  environment:
+    KUBECONFIG: "/home/{{ user }}/.kube/config"
   args:
     executable: /bin/bash
 
-- name: create ssl secret in argocd namespace
+- name: Copy clusterissuer.yaml from template
+  template:
+    src: clusterissuer.yaml.j2
+    dest: /home/{{ user }}/clusterissuer.yaml
+    owner: "{{ user }}"
+    group: "{{ user }}"
+    mode: "0644"
+
+- name: Copy certificate.yaml from template
+  template:
+    src: certificate.yaml.j2
+    dest: /home/{{ user }}/certificate.yaml
+    owner: "{{ user }}"
+    group: "{{ user }}"
+    mode: "0644"
+
+- name: Copy certificate-argo.yaml from template
+  template:
+    src: certificate-argo.yaml.j2
+    dest: /home/{{ user }}/certificate-argo.yaml
+    owner: "{{ user }}"
+    group: "{{ user }}"
+    mode: "0644"
+
+- name: create certificate
   shell: |
-    kubectl create namespace argocd
-    kubectl create secret tls my-tls-secret \
-    --cert=/home/{{ user }}/ssl/tls.pem \
-    --key=/home/{{ user }}/ssl/tls.key \
-    --namespace=argocd
+    kubectl apply -f /home/{{ user }}/clusterissuer.yaml
+    kubectl apply -f /home/{{ user }}/certificate.yaml
+    kubectl apply -f /home/{{ user }}/certificate-argo.yaml
+  environment:
+    KUBECONFIG: "/home/{{ user }}/.kube/config"
   args:
     executable: /bin/bash

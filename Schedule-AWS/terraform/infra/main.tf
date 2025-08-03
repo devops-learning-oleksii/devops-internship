@@ -43,75 +43,76 @@ module "vpc" {
 }
 
 module "security_groups" {
-    source = "terraform-aws-modules/security-group/aws"
+  source = "terraform-aws-modules/security-group/aws"
 
-    for_each = local.terraform_config.security_groups
+  for_each = local.terraform_config.security_groups
 
-    name = each.key
-    vpc_id = module.vpc.vpc_id
+  name = each.key
+  vpc_id = module.vpc.vpc_id
 
-    ingress_with_cidr_blocks = concat(
-        [
-            for port in each.value.ingress_ports_tcp : {
-                from_port = port
-                to_port = port
-                protocol = "tcp"
-                cidr_blocks = each.value.allowed_cidr_blocks[0]
-            }
-        ],
-        [
-            for port in each.value.ingress_ports_udp : {
-                from_port = port
-                to_port = port
-                protocol = "udp"
-                cidr_blocks = each.value.allowed_cidr_blocks[0]
-            }
-        ]
-    )
+  ingress_with_cidr_blocks = concat(
+      [
+          for port in each.value.ingress_ports_tcp : {
+              from_port = port
+              to_port = port
+              protocol = "tcp"
+              cidr_blocks = each.value.allowed_cidr_blocks[0]
+          }
+      ],
+      [
+          for port in each.value.ingress_ports_udp : {
+              from_port = port
+              to_port = port
+              protocol = "udp"
+              cidr_blocks = each.value.allowed_cidr_blocks[0]
+          }
+      ]
+  )
 
-    egress_with_cidr_blocks = [
-        {
-            from_port = 0
-            to_port = 0
-            protocol = "-1"
-            cidr_blocks = "0.0.0.0/0"
-            description = "Allow all outbound traffic"
-        }
-    ]
+  egress_with_cidr_blocks = [
+      {
+          from_port = 0
+          to_port = 0
+          protocol = "-1"
+          cidr_blocks = "0.0.0.0/0"
+          description = "Allow all outbound traffic"
+      }
+  ]
 
-    tags = merge(
-        {
-        Name = each.key
-        },
-        local.terraform_config.tags
-    )    
+  tags = merge(
+      {
+      Name = each.key
+      },
+      local.terraform_config.tags
+  )    
 }
 
 module "ec2_instance" {
-    source = "terraform-aws-modules/ec2-instance/aws"
+  source = "terraform-aws-modules/ec2-instance/aws"
 
-    for_each = local.ec2_instances_flat
+  for_each = local.ec2_instances_flat
 
-    name = "${each.value.base_name}-node-${each.value.index}"
-    ami = each.value.ami
-    instance_type = each.value.instance_type
-    key_name = each.value.key_name
-    vpc_security_group_ids = [module.security_groups[each.value.security_group].security_group_id]
+  name = "${each.value.base_name}-node-${each.value.index}"
+  ami = each.value.ami
+  instance_type = each.value.instance_type
+  key_name = each.value.key_name
+  vpc_security_group_ids = [module.security_groups[each.value.security_group].security_group_id]
+  iam_instance_profile   = each.value.iam_role != "" ? each.value.iam_role : null
 
-    subnet_id = (
-        each.value.subnet_type == "public" ? module.vpc.public_subnets[0] : module.vpc.private_subnets[0]
-    )
+  subnet_id = (
+      each.value.subnet_type == "public" ? module.vpc.public_subnets[0] : module.vpc.private_subnets[0]
+  )
 
-    associate_public_ip_address = each.value.public_ip
+  associate_public_ip_address = each.value.public_ip
 
-    tags = merge(
-        {
-        Name = "instance-${each.key}"
-        },
-        local.terraform_config.tags
-    )
+  tags = merge(
+      {
+      Name = "instance-${each.key}"
+      },
+      local.terraform_config.tags
+  )
 
-    depends_on = [module.vpc]
+  depends_on = [module.vpc]
 
 }
 
@@ -141,7 +142,7 @@ module "ssh_config" {
 resource "aws_route53_record" "a_records" {
   for_each =  toset(["argo", "monitoring", "api", "@"]) # List of subdomains
 
-  zone_id = loca.terraform_config.zone_id #YOUR_ZONE_ID
+  zone_id = local.terraform_config.zone_id #YOUR_ZONE_ID
   name    = each.key == "@" ? local.terraform_config.domain_name : "${each.key}.${local.terraform_config.domain_name}"
   type    = "A"
   ttl     = 300

@@ -8,7 +8,8 @@
     mode: "0755"
 
 - name: Apply argocd ingress
-  shell: kubectl apply -f /home/{{ user }}/argocd/ingress.yml -n argocd
+  shell: |
+     kubectl apply -f /home/{{ user }}/argocd/ingress.yml -n argocd
   args:
     executable: /bin/bash
   
@@ -36,7 +37,7 @@
   shell: |
     pass=$(kubectl -n argocd get secret argocd-initial-admin-secret -o jsonpath="{.data.password}" | base64 -d)
     echo $pass
-    argocd login argo.proxy-test.xyz --username admin --password $pass
+    argocd login argo.nightphoenix.site --username admin --password $pass
     argocd repo add https://github.com/NightPhoenixSC2/ArgoCD.git --username NightPhoenixSC2 --password {{ GITHUB_TOKEN }}
     kubectl apply -f /home/{{ user }}/argocd/root.yml -n argocd
     argocd account update-password --current-password $pass --new-password {{ ARGOCD_PASSWORD }}

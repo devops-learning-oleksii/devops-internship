@@ -8,17 +8,17 @@ spec:
     - websecure
   routes:
     - kind: Rule
-      match: Host(`argo.proxy-test.xyz`)
+      match: Host(`argo.nightphoenix.site`)
       priority: 10
       services:
         - name: argocd-server
           port: 80
     - kind: Rule
-      match: Host(`argo.proxy-test.xyz`) && Header(`Content-Type`, `application/grpc`)
+      match: Host(`argo.nightphoenix.site`) && Header(`Content-Type`, `application/grpc`)
       priority: 11
       services:
         - name: argocd-server
           port: 80
           scheme: h2c
   tls:
-    secretName: my-tls-secret
+    secretName: domain-tls
