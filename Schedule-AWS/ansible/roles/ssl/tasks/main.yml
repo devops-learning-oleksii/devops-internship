@@ -1,4 +1,12 @@
 ---
+- name: Fetch secret from AWS Secrets Manager
+  set_fact:
+    secret_obj: "{{ lookup('amazon.aws.aws_secret', secret_name, region=region) | from_json }}"
+
+- name: Set DB facts
+  set_fact:
+    MAIN_DOMAIN: "{{ secret_obj.domain }}"
+
 - name: install cert-manager
   shell: |
     kubectl create namespace argocd

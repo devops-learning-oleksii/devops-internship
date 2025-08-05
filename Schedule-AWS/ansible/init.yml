@@ -12,13 +12,28 @@
     - worker-init
 
 - hosts: server
-  become: true
+  collections:
+    - amazon.aws
+  vars:
+    DATABASE_ENDPOINT: "{{ lookup('env', 'DATABASE_ENDPOINT') }}"
+    secret_name: "{{ lookup('env', 'SECRET_NAME') }}"
+    s3_bucket: "{{ lookup('env', 'S3_BUCKET_NAME') }}"
+    region: "us-east-1"
+    s3_object_key: "Dump/database.sql"
+    s3_dest_path: "./database.sql"
+  become: yes
+  gather_facts: no
   roles:
     - ssl
+    - dump
+    - secrets
+
+- hosts: server
+  become: true
+  roles:
     - install-helm
     - install-metallb
     - worker-roles
-    - secrets
     - argocd
     - crds
     - monitoring
