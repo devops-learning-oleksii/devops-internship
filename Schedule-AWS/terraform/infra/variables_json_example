@@ -20,6 +20,10 @@
             "public_subnet_cidrs": [
                 "10.2.11.0/24",
                 "10.2.12.0/24"
+            ],
+            "database_subnets": [
+                "10.2.21.0/24",
+                "10.2.22.0/24"
             ]
         },
         "tags": {
@@ -36,6 +40,11 @@
                 "ingress_ports_tcp": [22, 10250, 51820, 51821, 5001, 6443],
                 "ingress_ports_udp": [8472],
                 "allowed_cidr_blocks": ["10.2.0.0/16"]
+            },
+            "database_sg": {
+                "ingress_ports_tcp": [5432],
+                "ingress_ports_udp": [],
+                "allowed_cidr_blocks": ["10.2.0.0/16"]
             }
         },
         "instances": {
@@ -47,7 +56,9 @@
                     "security_group": "server_sg",
                     "subnet_type": "public",
                     "public_ip": true,
-                    "count": 1
+                    "iam_role": "ec2-server",
+                    "count": 1,
+                    "user_data": "backend_provision.sh"
                 },
                 "worker": {
                     "ami": "ami-084568db4383264d4",
@@ -56,9 +67,15 @@
                     "security_group": "worker_sg",
                     "subnet_type": "private",
                     "public_ip": false,
-                    "count": 3
+                    "iam_role": "",
+                    "count": 3,
+                    "user_data": ""
                 }
             }
+        },
+        "database": {
+            "instance_class": "db.t3.micro",
+            "allocated_storage": 20
         },
         "ssh": {
             "ssh_user": "ubuntu",
@@ -66,7 +83,7 @@
             "ssh_machines": [
                 "worker-1",
                 "worker-2",
-		        "worker-3"
+                "worker-3"
             ]
         }
     }
