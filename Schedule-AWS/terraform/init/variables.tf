@@ -5,3 +5,7 @@ variable "aws_region" {
 variable "bucket_name" {
   type = string
 }
+
+variable "secret_name" {
+  type = string
+}
